@@ -61,11 +61,11 @@ spec:
           helm:
             valueFiles:
               - $values/bootstrap/values/{{ .name }}/values.yaml
-        - repoURL: https://github.com/piomin/kubernetes-config-argocd.git
+        - repoURL: https://github.com/riarana1/argo-cd-config.git
           targetRevision: HEAD
           ref: values
         {{- if .postInstall }}
-        - repoURL: https://github.com/piomin/kubernetes-config-argocd.git
+        - repoURL: https://github.com/riarana1/argo-cd-config.git
           targetRevision: HEAD
           path: apps/{{ .name }}
         {{- end }}
