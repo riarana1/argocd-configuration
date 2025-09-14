@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: bootstrap-config
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+  - list:
+      elements:
+        - chart: vault
+          name: vault
+          repo: https://helm.releases.hashicorp.com
+          revision: 0.27.0
+          namespace: vault
+          postInstall: true
+        - chart: postgresql
+          name: postgresql
+          repo: https://charts.bitnami.com/bitnami
+          revision: 12.12.10
+          namespace: default
+          postInstall: true
+        - chart: cert-manager
+          name: cert-manager
+          repo: https://charts.jetstack.io
+          revision: v1.14.4
+          namespace: cert-manager
+          postInstall: false
+        - chart: vault-config-operator
+          name: vault-config-operator
+          repo: https://redhat-cop.github.io/vault-config-operator
+          revision: v0.8.25
+          namespace: vault-config-operator
+          postInstall: false
+        - chart: charts/atlas-operator
+          name: atlas
+          repo: ghcr.io/ariga
+          revision: 0.4.2
+          namespace: atlas
+          postInstall: false
+  template:
+    metadata:
+      name: '{{.name}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      syncPolicy:
+        automated: {}
+        syncOptions:
+          - CreateNamespace=true
+      destination:
+        namespace: '{{.namespace}}'
+        server: https://kubernetes.default.svc
+      project: default
+  templatePatch: |
+    spec:
+      sources:
+        - repoURL: '{{ .repo }}'
+          chart: '{{ .chart }}'
+          targetRevision: '{{ .revision }}'
+          helm:
+            valueFiles:
+              - $values/bootstrap/values/{{ .name }}/values.yaml
+        - repoURL: https://github.com/piomin/kubernetes-config-argocd.git
+          targetRevision: HEAD
+          ref: values
+        {{- if .postInstall }}
+        - repoURL: https://github.com/piomin/kubernetes-config-argocd.git
+          targetRevision: HEAD
+          path: apps/{{ .name }}
+        {{- end }}
